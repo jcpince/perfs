@@ -122,7 +122,7 @@ int perfs_save_ts(perfs_ts_t *ts, const char *filename)
     for (perfs_ts_event_t *event = ts->events ; event ; event = event->next)
     {
         max_depth = max(max_depth, event->depth);
-        fprintf(f, "%s_%s_%s, ",
+        fprintf(f, "%s_%s_%s,",
             (event->buffer_type == PERFS_TS_BUFFER_REGULAR ? "first" : "last"),
             event->name,
             (event->type == PERFS_TS_EVENT_QUICK ? "core_ticks" : "ms"));
@@ -138,9 +138,9 @@ int perfs_save_ts(perfs_ts_t *ts, const char *filename)
             if (event->filled_once)
                 evt_idx = (event->current_idx + idx) % event->depth;
             if (idx < event->depth)
-                fprintf(f, "%ld, ", event->timestamps[evt_idx]);
+                fprintf(f, "%ld,", event->timestamps[evt_idx]);
             else
-                fprintf(f, "nan, ");
+                fprintf(f, "na,");
         }
         fprintf(f, "\n");
     }
