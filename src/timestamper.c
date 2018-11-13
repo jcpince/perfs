@@ -48,6 +48,7 @@ int perfs_ts_deinit(perfs_ts_t *ts)
         if (event->timestamps) free(event->timestamps);
         free(event);
     }
+    return 0;
 }
 
 perfs_ts_event_t *perfs_add_ts_event(perfs_ts_t *ts, const char *name,
