@@ -8,6 +8,7 @@ extern "C"
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 
 typedef enum
 {
@@ -45,6 +46,7 @@ perfs_ts_event_t    *perfs_add_ts_event(perfs_ts_t *ts, const char *name,
     perfs_ts_event_type_t type, perfs_ts_buffer_type_t buffer_type, uint32_t depth);
 void                perfs_record_ts(perfs_ts_event_t *tse);
 int                 perfs_save_ts(perfs_ts_t *ts, const char *filename);
+int                 perfs_dump_ts(perfs_ts_t *ts, FILE *f, const char *prefix);
 
 #ifdef __cplusplus
 }

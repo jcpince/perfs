@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <stdio.h>
 #include <time.h>
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
@@ -22,21 +21,33 @@ static inline uint64_t read_tsc()
     __asm__ volatile ("rdtsc" : "=a" (tsc_lo), "=d" (tsc_hi));
     return ( tsc_hi << 32 ) | tsc_lo;
 }
+#elif defined __K1__
+#include <hal/cos_power.h>
+static inline uint64_t read_tsc()
+{
+        return mppa_pwr_ctrl_local->dsu_timestamp.reg;
+}
+#else
+#error "Unknown architecture!"
 #endif
 
+#if defined __K1__
 static inline uint64_t read_time_ms()
 {
     struct timespec now;
     clock_gettime(CLOCK_MONOTONIC, &now);
     return (uint64_t)now.tv_sec * 1000 + (uint64_t)now.tv_nsec / 1000000;
 }
+#endif
 
 int perfs_ts_init(perfs_ts_t *ts)
 {
     ts->events = NULL;
+#if !defined(__K1__)
     struct timespec now;
     if (clock_gettime(CLOCK_MONOTONIC, &now))
         return errno;
+#endif
     return 0;
 }
 
@@ -90,10 +101,15 @@ void perfs_record_ts(perfs_ts_event_t *tse)
 {
     if (tse->full) return;
     uint64_t now;
+
+#if !defined(__K1__)
     if (tse->type == PERFS_TS_EVENT_QUICK)
         now = read_tsc();
     else
         now = read_time_ms();
+#else
+    now = read_tsc();
+#endif
     if (!now)
     {
         printf("%s just got now == 0!!!\n", tse->name);
@@ -111,15 +127,12 @@ void perfs_record_ts(perfs_ts_event_t *tse)
     }
 }
 
-int perfs_save_ts(perfs_ts_t *ts, const char *filename)
+int perfs_dump_ts(perfs_ts_t *ts, FILE *f, const char *prefix)
 {
     /* First, print the header */
-    FILE *f = fopen(filename, "w");
-    if (!f)
-        return errno;
-
     uint32_t max_depth = 0;
     /* print the header, and get the max depth */
+    fprintf(f, "%s", prefix);
     for (perfs_ts_event_t *event = ts->events ; event ; event = event->next)
     {
         max_depth = max(max_depth, event->depth);
@@ -133,6 +146,7 @@ int perfs_save_ts(perfs_ts_t *ts, const char *filename)
     /* Write the events in the event's chronological order (not global!) */
     for (int idx = 0 ; idx < max_depth ; idx++)
     {
+        fprintf(f, "%s", prefix);
         for (perfs_ts_event_t *event = ts->events ; event ; event = event->next)
         {
             uint32_t evt_idx = idx;
@@ -145,6 +159,17 @@ int perfs_save_ts(perfs_ts_t *ts, const char *filename)
         }
         fprintf(f, "\n");
     }
+    return 0;
+}
+
+int perfs_save_ts(perfs_ts_t *ts, const char *filename)
+{
+    /* First, print the header */
+    FILE *f = fopen(filename, "w");
+    if (!f)
+        return errno;
+
+    perfs_dump_ts(ts, f, "");
 
     fclose(f);
     return 0;
