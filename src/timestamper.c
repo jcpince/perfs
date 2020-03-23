@@ -42,11 +42,14 @@ int perfs_ts_init(perfs_ts_t *ts)
 
 int perfs_ts_deinit(perfs_ts_t *ts)
 {
-    for (perfs_ts_event_t *event = ts->events ; event ; event = event->next)
+    perfs_ts_event_t *event = ts->events, *next;
+    while(event)
     {
         if (event->name) free((char *)event->name);
         if (event->timestamps) free(event->timestamps);
+        next = event->next;
         free(event);
+	event = next;
     }
     return 0;
 }
